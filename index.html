@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Experience :P</title>
+    <style>
+        :root {
+            --hue-primary: 280;
+            --accent-glow: #00ffcc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #030308;
+            color: #ffffff;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            user-select: none;
+            cursor: crosshair;
+        }
+
+        #fairyCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        #fxCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .text-wall {
+            position: absolute;
+            top: -10vh;
+            left: -10vw;
+            width: 120vw;
+            height: 120vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+            pointer-events: auto;
+            line-height: 1.35;
+        }
+
+        .text-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            white-space: nowrap;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .phrase {
+            display: inline-block;
+            font-size: 12pt;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            color: #000000;
+            -webkit-text-stroke: 0px transparent;
+            opacity: 0;
+            pointer-events: auto;
+            
+            will-change: transform, color, opacity, filter, text-shadow;
+            transition: 
+                color 0.15s ease-out,
+                opacity 0.15s ease-out,
+                filter 0.15s ease-out,
+                transform 0.12s cubic-bezier(0.1, 0.8, 0.3, 1);
+            
+            transform: scale(1) translate(0px, 0px) rotate(0deg);
+            filter: drop-shadow(0 0 0px transparent);
+        }
+
+        .phrase.active-1 {
+            opacity: 1;
+            color: hsl(var(--hue, 0), 100%, 70%);
+            -webkit-text-stroke: 0px transparent;
+            filter: drop-shadow(0 0 12px hsl(var(--hue, 0), 100%, 65%))
+                    drop-shadow(0 0 25px hsl(var(--hue, 0), 100%, 50%));
+            text-shadow: 
+                0 0 8px hsl(var(--hue, 0), 100%, 80%),
+                0 0 18px hsl(var(--hue, 0), 100%, 60%);
+            z-index: 10;
+        }
+
+        .phrase.active-2 {
+            opacity: 0.85;
+            color: hsl(var(--hue, 0), 90%, 60%);
+            -webkit-text-stroke: 0.5px hsla(var(--hue, 0), 100%, 75%, 0.6);
+            filter: drop-shadow(0 0 8px hsl(var(--hue, 0), 90%, 50%));
+            text-shadow: 0 0 10px hsl(var(--hue, 0), 80%, 50%);
+            z-index: 5;
+        }
+
+        .phrase.active-3 {
+            opacity: 0.45;
+            color: transparent;
+            -webkit-text-stroke: 1px hsl(var(--hue, 0), 100%, 70%);
+            filter: drop-shadow(0 0 4px hsl(var(--hue, 0), 80%, 50%));
+            z-index: 2;
+        }
+
+        .hud-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 200;
+            background: rgba(10, 10, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 30px;
+            font-size: 11pt;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .hud-toggle:hover {
+            border-color: #00ffcc;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .hud-panel {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            width: 320px;
+            background: rgba(8, 8, 16, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 20px;
+            z-index: 200;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transform: translateX(360px);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .hud-panel.open {
+            transform: translateX(0);
+        }
+
+        .hud-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .hud-label {
+            font-size: 9pt;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #8888aa;
+            font-weight: 700;
+        }
+
+        .hud-select, .hud-input {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 10pt;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .hud-select:focus, .hud-input:focus {
+            border-color: #00ffcc;
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hud-slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hud-slider {
+            flex: 1;
+            accent-color: #00ffcc;
+            cursor: pointer;
+        }
+
+        .audio-btn {
+            background: linear-gradient(135deg, #00ffcc, #0088ff);
+            border: none;
+            color: #000;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 10pt;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .audio-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9pt;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 100;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="hud-toggle" id="hudToggle">⚙ Controls</button>
+
+    <div class="hud-panel" id="hudPanel">
+        <button class="audio-btn" id="audioBtn">🔊 Audio Off</button>
+
+        <div class="hud-group">
+            <label class="hud-label">Type a Phrase</label>
+            <input type="text" id="phraseInput" class="hud-input" value="Ain't no thing but chicken wing.">
+        </div>
+
+        <div class="hud-group">
+            <label class="hud-label">Modes</label>
+            <select id="warpSelect" class="hud-select">
+                <option value="hyper">Text Repel</option>
+                <option value="vortex">Text Twist</option>
+                <option value="wave">Text Wave</option>
+                <option value="glitch">Text Glitch</option>
+            </select>
+        </div>
+
+        <div class="hud-group">
+            <label class="hud-label">Change Color</label>
+            <select id="themeSelect" class="hud-select">
+                <option value="vaporwave">Sunset</option>
+                <option value="acid">Matrix</option>
+                <option value="rainbow">Rainbow</option>
+            </select>
+        </div>
+
+        <div class="hud-group">
+            <div class="hud-row">
+                <label class="hud-label">Frilly Trail Intensity</label>
+                <span id="particleVal" style="font-size: 8pt; color: #aaa;">Medium</span>
+            </div>
+            <div class="hud-slider-group">
+                <input type="range" id="particleSlider" class="hud-slider" min="1" max="5" value="3">
+            </div>
+        </div>
+
+        <div class="hud-group">
+            <div class="hud-row">
+                <label class="hud-label">Volume</label>
+                <span id="volumeVal" style="font-size: 8pt; color: #aaa;">40%</span>
+            </div>
+            <div class="hud-slider-group">
+                <input type="range" id="volumeSlider" class="hud-slider" min="0" max="100" value="40">
+            </div>
+        </div>
+    </div>
+
+    <canvas id="fxCanvas"></canvas>
+    <canvas id="fairyCanvas"></canvas>
+    <div class="text-wall" id="wall"></div>
+    <div class="hint">Move cursor to itch your brain</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wall = document.getElementById('wall');
+            const fairyCanvas = document.getElementById('fairyCanvas');
+            const fxCanvas = document.getElementById('fxCanvas');
+            const fCtx = fairyCanvas.getContext('2d');
+            const xCtx = fxCanvas.getContext('2d');
+
+            // Controls
+            const hudToggle = document.getElementById('hudToggle');
+            const hudPanel = document.getElementById('hudPanel');
+            const audioBtn = document.getElementById('audioBtn');
+            const phraseInput = document.getElementById('phraseInput');
+            const warpSelect = document.getElementById('warpSelect');
+            const themeSelect = document.getElementById('themeSelect');
+            const particleSlider = document.getElementById('particleSlider');
+            const particleVal = document.getElementById('particleVal');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeVal = document.getElementById('volumeVal');
+
+            let phrasesData = [];
+            let particles = [];
+            let shockwaves = [];
+            let mouseX = -1000;
+            let mouseY = -1000;
+            let prevMouseX = -1000;
+            let prevMouseY = -1000;
+            let mouseVel = 0;
+            let isMoving = false;
+            let audioEnabled = false;
+
+            let audioCtx = null;
+            let masterGain = null;
+            const pentatonicScale = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+
+            function initAudio() {
+                if (audioCtx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = volumeSlider.value / 100;
+                masterGain.connect(audioCtx.destination);
+            }
+
+            function playSynthNote(freq, velocity) {
+                if (!audioEnabled || !audioCtx) return;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const filter = audioCtx.createBiquadFilter();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(300 + velocity * 20, audioCtx.currentTime);
+
+                    const noteGain = Math.min(0.25, (velocity / 50) * (volumeSlider.value / 100));
+                    gain.gain.setValueAtTime(noteGain, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(masterGain);
+
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.36);
+                } catch (e) {}
+            }
+
+            function resizeCanvases() {
+                fairyCanvas.width = window.innerWidth;
+                fairyCanvas.height = window.innerHeight;
+                fxCanvas.width = window.innerWidth;
+                fxCanvas.height = window.innerHeight;
+            }
+            resizeCanvases();
+
+            const themes = {
+                vaporwave: { base: 300, range: 90 },
+                acid: { base: 90, range: 60 },
+                rainbow: { base: 0, range: 360 }
+            };
+
+            function buildWall() {
+                wall.innerHTML = '';
+                phrasesData = [];
+                const rawPhrase = phraseInput.value || "TO BE ALIVE IS TO BE CHAOS.";
+                const formattedPhrase = rawPhrase + "\u00A0\u00A0\u00A0\u00A0";
+                
+                const lineCount = Math.ceil(window.innerHeight / 22) + 10;
+                const repeatPerRow = Math.ceil(window.innerWidth / (rawPhrase.length * 9)) + 4;
+
+                for (let i = 0; i < lineCount; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'text-row';
+                    
+                    for (let j = 0; j < repeatPerRow; j++) {
+                        const span = document.createElement('span');
+                        span.className = 'phrase';
+                        span.textContent = formattedPhrase;
+                        span.dataset.originalText = formattedPhrase;
+                        row.appendChild(span);
+                    }
+                    wall.appendChild(row);
+                }
+
+                const elements = wall.querySelectorAll('.phrase');
+                elements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    phrasesData.push({
+                        element: el,
+                        cx: rect.left + rect.width / 2,
+                        cy: rect.top + rect.height / 2,
+                        originalText: el.dataset.originalText
+                    });
+                });
+            }
+
+            buildWall();
+
+            window.addEventListener('resize', () => {
+                resizeCanvases();
+                buildWall();
+            });
+
+            hudToggle.addEventListener('click', () => hudPanel.classList.toggle('open'));
+            phraseInput.addEventListener('input', () => buildWall());
+            
+            audioBtn.addEventListener('click', () => {
+                initAudio();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                audioEnabled = !audioEnabled;
+                audioBtn.textContent = audioEnabled ? "🔈 Audio On" : "🔊 Audio Off";
+            });
+
+            particleSlider.addEventListener('input', () => {
+                const val = parseInt(particleSlider.value);
+                if (val <= 1) {
+                    particleVal.textContent = "Low";
+                } else if (val <= 3) {
+                    particleVal.textContent = "Medium";
+                } else {
+                    particleVal.textContent = "High";
+                }
+            });
+
+            volumeSlider.addEventListener('input', () => {
+                const val = volumeSlider.value;
+                volumeVal.textContent = val + "%";
+                if (masterGain) masterGain.gain.value = val / 100;
+            });
+
+            class Particle {
+                constructor(x, y, hue) {
+                    this.x = x + (Math.random() - 0.5) * 16;
+                    this.y = y + (Math.random() - 0.5) * 16;
+                    this.size = Math.random() * 3.5 + 1.5;
+                    this.speedX = (Math.random() - 0.5) * 3;
+                    this.speedY = (Math.random() - 0.5) * 3 - 0.5;
+                    this.hue = hue + (Math.random() * 30 - 15);
+                    this.alpha = 1;
+                    this.decay = Math.random() * 0.02 + 0.015;
+                }
+
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    this.speedY += 0.04; 
+                    this.alpha -= this.decay;
+                    this.size *= 0.97;
+                }
+
+                draw() {
+                    if (this.alpha <= 0) return;
+                    fCtx.save();
+                    fCtx.globalAlpha = Math.max(0, this.alpha);
+                    fCtx.shadowBlur = 12;
+                    fCtx.shadowColor = `hsl(${this.hue}, 100%, 65%)`;
+                    
+                    fCtx.fillStyle = `hsl(${this.hue}, 100%, 75%)`;
+                    fCtx.beginPath();
+                    fCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    fCtx.fill();
+
+                    fCtx.fillStyle = '#ffffff';
+                    fCtx.beginPath();
+                    fCtx.arc(this.x, this.y, this.size * 0.4, 0, Math.PI * 2);
+                    fCtx.fill();
+
+                    fCtx.restore();
+                }
+            }
+
+            function spawnParticles(x, y, hue) {
+                const count = parseInt(particleSlider.value);
+                for (let i = 0; i < count; i++) {
+                    particles.push(new Particle(x, y, hue));
+                }
+            }
+
+            class Shockwave {
+                constructor(x, y, hue) {
+                    this.x = x;
+                    this.y = y;
+                    this.radius = 10;
+                    this.maxRadius = 220;
+                    this.alpha = 1;
+                    this.hue = hue;
+                }
+
+                update() {
+                    this.radius += 8;
+                    this.alpha -= 0.03;
+                }
+
+                draw() {
+                    if (this.alpha <= 0) return;
+                    xCtx.save();
+                    xCtx.globalAlpha = Math.max(0, this.alpha);
+                    xCtx.strokeStyle = `hsl(${this.hue}, 100%, 65%)`;
+                    xCtx.lineWidth = 3;
+                    xCtx.shadowBlur = 15;
+                    xCtx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+                    xCtx.beginPath();
+                    xCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    xCtx.stroke();
+                    xCtx.restore();
+                }
+            }
+
+            const glitchChars = "!@#$%^&*()_+-=[]{}|;:,.<>?/~0123456789";
+            function getGlitchedText(str) {
+                return str.split('').map(ch => (Math.random() < 0.35 && ch !== ' ') ? glitchChars[Math.floor(Math.random() * glitchChars.length)] : ch).join('');
+            }
+
+            let frameCount = 0;
+
+            function renderLoop() {
+                frameCount++;
+                fCtx.clearRect(0, 0, fairyCanvas.width, fairyCanvas.height);
+                xCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+
+                const selectedKey = themeSelect.value;
+                const currentTheme = themes[selectedKey] || themes.vaporwave;
+                
+                let globalHue;
+                if (selectedKey === 'rainbow') {
+                    globalHue = (frameCount * 2 + (mouseX / window.innerWidth) * 180) % 360;
+                } else {
+                    globalHue = (currentTheme.base + ((mouseX / window.innerWidth) * currentTheme.range)) % 360;
+                }
+
+                if (isMoving && mouseX > 0 && mouseY > 0) {
+                    spawnParticles(mouseX, mouseY, globalHue);
+
+                    if (frameCount % 4 === 0 && mouseVel > 2) {
+                        const noteIndex = Math.floor((mouseY / window.innerHeight) * pentatonicScale.length);
+                        const clampedIndex = Math.max(0, Math.min(pentatonicScale.length - 1, noteIndex));
+                        playSynthNote(pentatonicScale[clampedIndex], mouseVel);
+                    }
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.update();
+                    p.draw();
+                    if (p.alpha <= 0 || p.size <= 0.2) particles.splice(i, 1);
+                }
+
+                for (let i = shockwaves.length - 1; i >= 0; i--) {
+                    const sw = shockwaves[i];
+                    sw.update();
+                    sw.draw();
+                    if (sw.alpha <= 0) shockwaves.splice(i, 1);
+                }
+
+                const warpMode = warpSelect.value;
+
+                phrasesData.forEach(p => {
+                    const dx = mouseX - p.cx;
+                    const dy = mouseY - p.cy;
+                    const dist = Math.hypot(dx, dy);
+
+                    p.element.classList.remove('active-1', 'active-2', 'active-3');
+
+                    if (dist < 180) {
+                        const hueOffset = (dist / 180) * 40;
+                        const finalHue = (globalHue + hueOffset) % 360;
+                        p.element.style.setProperty('--hue', finalHue);
+
+                        let transX = 0;
+                        let transY = 0;
+                        let scale = 1;
+                        let rot = 0;
+
+                        if (warpMode === 'hyper') {
+                            const force = (1 - dist / 180) * 35;
+                            const angle = Math.atan2(dy, dx);
+                            transX = -Math.cos(angle) * force;
+                            transY = -Math.sin(angle) * force;
+                        } else if (warpMode === 'vortex') {
+                            const angle = Math.atan2(dy, dx) + (1 - dist / 180) * 2.5;
+                            const force = (1 - dist / 180) * 25;
+                            transX = -Math.cos(angle) * force;
+                            transY = -Math.sin(angle) * force;
+                            rot = (1 - dist / 180) * 20;
+                        } else if (warpMode === 'wave') {
+                            const waveOffset = Math.sin(dist * 0.08 - frameCount * 0.15) * 12;
+                            transY = waveOffset;
+                        } else if (warpMode === 'glitch') {
+                            if (dist < 80 && Math.random() < 0.4) {
+                                p.element.textContent = getGlitchedText(p.originalText);
+                            } else if (p.element.textContent !== p.originalText) {
+                                p.element.textContent = p.originalText;
+                            }
+                        }
+
+                        if (dist < 65) {
+                            p.element.classList.add('active-1');
+                            scale = 1.12;
+                        } else if (dist < 115) {
+                            p.element.classList.add('active-2');
+                            scale = 1.05;
+                        } else {
+                            p.element.classList.add('active-3');
+                            scale = 1.01;
+                        }
+
+                        p.element.style.transform = `translate(${transX}px, ${transY}px) scale(${scale}) rotate(${rot}deg)`;
+                    } else {
+                        p.element.style.transform = `translate(0px, 0px) scale(1) rotate(0deg)`;
+                        if (p.element.textContent !== p.originalText) {
+                            p.element.textContent = p.originalText;
+                        }
+                    }
+                });
+
+                requestAnimationFrame(renderLoop);
+            }
+
+            function handlePointerMove(x, y) {
+                if (prevMouseX > 0) {
+                    const dx = x - prevMouseX;
+                    const dy = y - prevMouseY;
+                    mouseVel = Math.hypot(dx, dy);
+                }
+
+                mouseX = x;
+                mouseY = y;
+                prevMouseX = x;
+                prevMouseY = y;
+                isMoving = true;
+
+                clearTimeout(window.moveTimeout);
+                window.moveTimeout = setTimeout(() => {
+                    isMoving = false;
+                    mouseVel = 0;
+                }, 80);
+            }
+
+            window.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
+
+            window.addEventListener('click', (e) => {
+                const selectedKey = themeSelect.value;
+                const currentTheme = themes[selectedKey] || themes.vaporwave;
+                let globalHue = selectedKey === 'rainbow' ? (frameCount * 2) % 360 : (currentTheme.base + ((e.clientX / window.innerWidth) * currentTheme.range)) % 360;
+                shockwaves.push(new Shockwave(e.clientX, e.clientY, globalHue));
+                playSynthNote(pentatonicScale[Math.floor(Math.random() * pentatonicScale.length)], 40);
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            document.addEventListener('mouseleave', () => {
+                mouseX = -1000;
+                mouseY = -1000;
+                isMoving = false;
+            });
+
+            renderLoop();
+        });
+    </script>
+</body>
+</html>
