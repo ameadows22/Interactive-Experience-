@@ -260,12 +260,12 @@
         <button class="audio-btn" id="audioBtn">🔊 Audio Off</button>
 
         <div class="hud-group">
-            <label class="hud-label">Custom text</label>
+            <label class="hud-label">Customize text</label>
             <input type="text" id="phraseInput" class="hud-input" value="No Limit">
         </div>
 
         <div class="hud-group">
-            <label class="hud-label">Modes</label>
+            <label class="hud-label">Customize Mode</label>
             <select id="warpSelect" class="hud-select">
                 <option value="hyper">Text Blur</option>
                 <option value="vortex">Text Twist</option>
@@ -296,10 +296,10 @@
         <div class="hud-group">
             <div class="hud-row">
                 <label class="hud-label">Volume</label>
-                <span id="volumeVal" style="font-size: 8pt; color: #aaa;">59%</span>
+                <span id="volumeVal" style="font-size: 8pt; color: #aaa;">40%</span>
             </div>
             <div class="hud-slider-group">
-                <input type="range" id="volumeSlider" class="hud-slider" min="0" max="100" value="59">
+                <input type="range" id="volumeSlider" class="hud-slider" min="0" max="100" value="40">
             </div>
         </div>
     </div>
@@ -317,6 +317,7 @@
             const fCtx = fairyCanvas.getContext('2d');
             const xCtx = fxCanvas.getContext('2d');
 
+            // Controls
             const hudToggle = document.getElementById('hudToggle');
             const hudPanel = document.getElementById('hudPanel');
             const audioBtn = document.getElementById('audioBtn');
