@@ -261,7 +261,7 @@
 
         <div class="hud-group">
             <label class="hud-label">Custom text</label>
-            <input type="text" id="phraseInput" class="hud-input" value="Ain't no thing but a chicken wing">
+            <input type="text" id="phraseInput" class="hud-input" value=No Limit">
         </div>
 
         <div class="hud-group">
@@ -396,7 +396,6 @@
             function buildWall() {
                 wall.innerHTML = '';
                 phrasesData = [];
-                const rawPhrase = phraseInput.value || "TO BE ALIVE IS TO BE CHAOS.";
                 const formattedPhrase = rawPhrase + "\u00A0\u00A0\u00A0\u00A0";
                 
                 const lineCount = Math.ceil(window.innerHeight / 22) + 10;
